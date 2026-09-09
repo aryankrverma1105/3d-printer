@@ -99,7 +99,9 @@ export const ProjectIntakeForm: React.FC<ProjectIntakeFormProps> = ({
     };
 
     // Configurable Google Apps Script WebApp endpoint
-    const scriptUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
+    const scriptUrl =
+      import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL ||
+      'https://script.google.com/a/macros/sologixenergy.in/s/AKfycbyj80cDIUSbyOgQ-sId9m0gHdbnVOy6yFzGL_iAUie0SCDxwI-lQkqjU085kohJeikg/exec';
 
     if (scriptUrl) {
       try {

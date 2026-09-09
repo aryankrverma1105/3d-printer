@@ -4,29 +4,24 @@
  * Deployed as a Web App:
  * - Execute as: Me
  * - Who has access: Anyone (anonymous)
- *
- * This script receives lead submissions from the Sologix Energy quote form,
- * uploads attached CAD/STL files to a designated Google Drive folder,
- * and records the row in a connected Google Spreadsheet.
  */
 
-// CONFIGURATION: Replace with your actual Drive Folder ID and Sheet Name
+// CONFIGURATION: Replace with your actual Drive Folder Name and Sheet Name
 const DRIVE_FOLDER_NAME = "Sologix_CAD_Uploads";
 const SHEET_NAME = "Quote_Submissions";
 
 /**
  * ONE-TIME AUTHORIZATION TRIGGER:
  * Select "authorizePermissions" from the top dropdown in Apps Script and click "Run" (▶).
- * This forces Google to prompt for one-time Drive and Spreadsheet authorization!
  */
 function authorizePermissions() {
-  try {
-    const folders = DriveApp.getFoldersByName(DRIVE_FOLDER_NAME);
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    Logger.log("✅ Drive and Spreadsheet permissions successfully authorized!");
-  } catch (err) {
-    Logger.log("Authorization prompt error: " + err.message);
-  }
+  Logger.log("Testing Spreadsheet access...");
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  Logger.log("✅ Spreadsheet accessible: " + ss.getName());
+
+  Logger.log("Testing Drive access...");
+  const folders = DriveApp.getFoldersByName(DRIVE_FOLDER_NAME);
+  Logger.log("✅ Drive accessible!");
 }
 
 function doPost(e) {
@@ -51,26 +46,33 @@ function doPost(e) {
       fileName = data.fileName;
       fileSize = data.fileSize || "Unknown";
       
+      let step = "1: init";
       try {
-        // Locate or create the target Google Drive folder
-        let folder;
+        step = "2: decode base64";
+        const decodedBytes = Utilities.base64Decode(data.fileData);
+        const blob = Utilities.newBlob(
+          decodedBytes,
+          data.fileMimeType || "application/octet-stream",
+          `${Date.now()}_${fileName}`
+        );
+        
+        step = "3: getFoldersByName";
+        let targetFolder;
         const folders = DriveApp.getFoldersByName(DRIVE_FOLDER_NAME);
         if (folders.hasNext()) {
-          folder = folders.next();
+          targetFolder = folders.next();
         } else {
-          folder = DriveApp.createFolder(DRIVE_FOLDER_NAME);
+          step = "4: createFolder";
+          targetFolder = DriveApp.createFolder(DRIVE_FOLDER_NAME);
         }
         
-        // Decode binary content and create file
-        const decodedBytes = Utilities.base64Decode(data.fileData);
-        const blob = Utilities.newBlob(decodedBytes, data.fileMimeType || "application/octet-stream", `${Date.now()}_${fileName}`);
-        const driveFile = folder.createFile(blob);
+        step = "5: createFile";
+        const driveFile = targetFolder.createFile(blob);
         
-        // Set view access so engineering team can inspect CAD
-        driveFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        step = "6: getUrl";
         fileUrl = driveFile.getUrl();
       } catch (driveErr) {
-        fileUrl = "Drive Error (Authorize DriveApp): " + driveErr.message;
+        fileUrl = "Drive Error at step [" + step + "]: " + driveErr.message;
       }
     }
 
@@ -79,7 +81,6 @@ function doPost(e) {
     let sheet = ss.getSheetByName(SHEET_NAME);
     if (!sheet) {
       sheet = ss.insertSheet(SHEET_NAME);
-      // Header row
       sheet.appendRow([
         "Timestamp",
         "Full Name",
