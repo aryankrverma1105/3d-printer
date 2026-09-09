@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing & build artifacts
+dist/
+dist-ssr/
+*.local
+test-results/
+coverage/
+
+# Raw uncompressed source render assets (public/frames contains optimized WebP sequence)
+Images/
+
+# Environment Variables & Secrets (CRITICAL: Never commit)
+.env
+.env.*
+!.env.example
+
+# Agent workflows and internal IDE configs
+.agent/
+.system_generated/
+
+# Editor directories and system files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
