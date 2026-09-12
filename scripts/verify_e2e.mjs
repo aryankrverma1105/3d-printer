@@ -242,11 +242,11 @@ async function runE2E() {
   });
   await page.waitForTimeout(600);
   
-  await page.fill('input[type="text"][required]', 'Alex Mercer (Lead Eng)');
-  await page.fill('input[type="tel"]', '+91 9876543210');
-  await page.fill('input[type="email"]', 'alex.mercer@apex-dynamics.com');
-  await page.fill('input[placeholder*="freight estimate"]', 'Bengaluru, Karnataka, India');
-  await page.fill('textarea', 'Motor mount bracket requiring carbon fiber stiffness and high thermal endurance.');
+  await page.fill('#contact input[type="text"][required]', 'Alex Mercer (Lead Eng)');
+  await page.fill('#contact input[type="tel"]', '+91 9876543210');
+  await page.fill('#contact input[type="email"]', 'alex.mercer@apex-dynamics.com');
+  await page.fill('#contact input[placeholder*="freight estimate"]', 'Bengaluru, Karnataka, India');
+  await page.fill('#contact textarea', 'Motor mount bracket requiring carbon fiber stiffness and high thermal endurance.');
   
   const shotFormBefore = path.join(screenshotDir, '08_desktop_quote_form.png');
   await page.screenshot({ path: shotFormBefore });
@@ -340,7 +340,7 @@ async function runE2E() {
 
   // Mobile Screenshot: Form
   await mobilePage.evaluate(() => {
-    const c = document.getElementById('contact');
+    const c = document.getElementById('contact-mobile') || document.getElementById('contact');
     if (c) {
       const top = c.getBoundingClientRect().top + window.scrollY - 80;
       window.scrollTo(0, top);

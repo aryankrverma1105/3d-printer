@@ -20,7 +20,13 @@ export default function App() {
   const [selectedMaterialForQuote, setSelectedMaterialForQuote] = useState('PLA / PLA Carbon Fiber');
 
   const scrollToQuote = () => {
-    const contactEl = document.getElementById('contact');
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const targetId = isMobile ? 'contact-mobile' : 'contact-desktop';
+    const contactEl =
+      document.getElementById(targetId) ||
+      document.getElementById('contact-mobile') ||
+      document.getElementById('contact-desktop') ||
+      document.getElementById('contact');
     if (contactEl) {
       contactEl.scrollIntoView({ behavior: 'smooth' });
     }
@@ -69,6 +75,16 @@ export default function App() {
         {/* Industrial Social Proof & Trust Metrics Bar */}
         <TrustStatsBar />
 
+        {/* Mobile View: Instant Quote & Project Intake Section right after printer animation completes */}
+        <div className="block md:hidden">
+          <ProjectIntakeForm
+            id="contact-mobile"
+            isMobileTopPlacement={true}
+            initialService={selectedServiceForQuote}
+            initialMaterial={selectedMaterialForQuote}
+          />
+        </div>
+
         {/* Section 02: What We Do */}
         <ServicesSection onSelectService={handleSelectService} />
 
@@ -101,11 +117,14 @@ export default function App() {
         {/* Section 09: Frequently Asked Questions */}
         <FAQSection />
 
-        {/* Section 10: Simplified Project Intake & Quote Form */}
-        <ProjectIntakeForm
-          initialService={selectedServiceForQuote}
-          initialMaterial={selectedMaterialForQuote}
-        />
+        {/* Desktop View: Project Intake & Quote Form at the end of the website */}
+        <div className="hidden md:block">
+          <ProjectIntakeForm
+            id="contact"
+            initialService={selectedServiceForQuote}
+            initialMaterial={selectedMaterialForQuote}
+          />
+        </div>
       </main>
 
       {/* Industrial Footer */}

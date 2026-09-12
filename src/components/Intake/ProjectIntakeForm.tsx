@@ -4,11 +4,15 @@ import { Upload, CheckCircle2, FileCheck, AlertCircle, ArrowRight, Shield, Mail 
 interface ProjectIntakeFormProps {
   initialService?: string;
   initialMaterial?: string;
+  id?: string;
+  isMobileTopPlacement?: boolean;
 }
 
 export const ProjectIntakeForm: React.FC<ProjectIntakeFormProps> = ({
   initialService = 'Rapid Prototyping',
   initialMaterial = 'PLA / PLA Carbon Fiber',
+  id = 'contact',
+  isMobileTopPlacement = false,
 }) => {
   // Contact & Delivery Details
   const [fullName, setFullName] = useState('');
@@ -148,16 +152,16 @@ export const ProjectIntakeForm: React.FC<ProjectIntakeFormProps> = ({
   )}`;
 
   return (
-    <section id="contact" className="relative py-18 bg-[#D6E6F5] text-[#1F2937] border-t border-[#C9DBEC]">
+    <section id={id} className="relative py-14 sm:py-18 bg-[#D6E6F5] text-[#1F2937] border-t border-[#C9DBEC]">
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 rounded-full bg-[#FF7A00]/10 border border-[#FF7A00]/30 text-[#FF7A00] font-mono text-xs uppercase tracking-widest font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A00]" />
-            <span>07 // DFM EVALUATION & QUOTE INTAKE</span>
+            <span>{isMobileTopPlacement ? '02 // INSTANT CAD QUOTATION & INTAKE' : '07 // DFM EVALUATION & QUOTE INTAKE'}</span>
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-black text-[#0F1A2B] tracking-tight uppercase">
-            HAVE A DESIGN IN MIND?
+            HAVE A DESIGN IN MIND? GET A QUOTE
           </h2>
           <p className="mt-2.5 text-xs sm:text-sm text-[#5B6B7F] font-sans leading-relaxed">
             Every part is individually evaluated by our engineering team. Upload your CAD geometry and specifications to receive a customized manufacturing quotation with zero tooling barrier.
