@@ -27,13 +27,8 @@ export function useFramePreloader(
       return framePathPattern.replace('{num}', numStr);
     };
 
-    // Calculate optimal decode resolution based on device capability
-    // On mobile screens (typically ~390px), capping to 640px preserves full Retina crispness
-    // while reducing memory from 900MB to ~220MB (75% memory drop, eliminating mobile Chrome GC/thermal lag)
     const screenW = typeof window !== 'undefined' ? window.innerWidth : 1440;
     const isMobile = screenW <= 768;
-    const targetWidth = isMobile ? 640 : (screenW > 1440 ? 1920 : 1280);
-    const resizeQuality: ImageBitmapOptions['resizeQuality'] = isMobile ? 'low' : 'medium';
 
     const loadSingleFrame = async (index: number): Promise<DrawableFrame | null> => {
       const url = getUrl(index);
@@ -42,16 +37,9 @@ export function useFramePreloader(
         if (!res.ok) throw new Error(`HTTP error ${res.status}`);
         const blob = await res.blob();
 
-        // Optimized off-main-thread decode with resolution capping
+        // Native off-main-thread decode preserving pristine 1080p source clarity
         if (typeof window.createImageBitmap === 'function') {
-          try {
-            return await createImageBitmap(blob, {
-              resizeWidth: targetWidth,
-              resizeQuality,
-            });
-          } catch {
-            return await createImageBitmap(blob);
-          }
+          return await createImageBitmap(blob);
         } else {
           // Standard Image element fallback
           return new Promise((resolve) => {

@@ -56,6 +56,9 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
       const ctx = canvas.getContext('2d', { alpha: false });
       if (!ctx) return;
 
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
       const { renderW, renderH, offsetX, offsetY } = canvasDrawParamsRef.current;
       ctx.drawImage(frame, offsetX, offsetY, renderW, renderH);
     },
@@ -91,11 +94,11 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
       if (canvas) {
         const displayWidth = canvas.clientWidth || window.innerWidth;
         const displayHeight = canvas.clientHeight || window.innerHeight;
-        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
         let targetW = Math.round(displayWidth * dpr);
         let targetH = Math.round(displayHeight * dpr);
-        const maxDim = 1920;
+        const maxDim = 2560;
         if (targetW > maxDim || targetH > maxDim) {
           const scale = maxDim / Math.max(targetW, targetH);
           targetW = Math.round(targetW * scale);
