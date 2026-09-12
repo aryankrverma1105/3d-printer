@@ -23,7 +23,7 @@ export const HeroTelemetryOverlay: React.FC<HeroTelemetryOverlayProps> = ({
       {/* Top Technical HUD Bar */}
       <div className="flex items-start justify-between w-full">
         {/* System Telemetry Badge with subtle anti-gravity float */}
-        <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1 sm:px-3.5 sm:py-2 rounded-sm bg-[#16233A]/90 border border-white/[0.08] backdrop-blur-md animate-antigravity-float shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
+        <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1 sm:px-3.5 sm:py-2 rounded-sm bg-[#16233A]/95 sm:backdrop-blur-md sm:animate-antigravity-float border border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
           <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#FF7A00] animate-ping" />
           <span className="text-[10px] sm:text-sm font-mono tracking-widest text-zinc-200 uppercase font-semibold">
             BAMBU LAB X2D // <span className="text-[#FF7A00]">FLEET CORE</span>
@@ -63,7 +63,7 @@ export const HeroTelemetryOverlay: React.FC<HeroTelemetryOverlayProps> = ({
           progress > 0.05 ? 'opacity-0 -translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0'
         }`}
       >
-        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-0.5 rounded-full bg-[#FF7A00]/10 border border-[#FF7A00]/30 text-[#FF7A00] font-mono text-[9px] sm:text-[11px] uppercase tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 backdrop-blur-md">
+        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 py-0.5 rounded-full bg-[#FF7A00]/10 border border-[#FF7A00]/30 text-[#FF7A00] font-mono text-[9px] sm:text-[11px] uppercase tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 sm:backdrop-blur-md">
           <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A00]" />
           00 // ON-DEMAND ADDITIVE MANUFACTURING
         </div>
@@ -86,7 +86,7 @@ export const HeroTelemetryOverlay: React.FC<HeroTelemetryOverlayProps> = ({
       {/* Bottom Control Bar */}
       <div className="w-full">
         {/* Mobile: Sleek, low-profile unified dock bar (prevents chamber/build plate blockage) */}
-        <div className="flex sm:hidden items-center justify-between w-full bg-[#16233A]/95 border border-white/[0.08] backdrop-blur-md px-3 py-1.5 rounded shadow-lg">
+        <div className="flex sm:hidden items-center justify-between w-full bg-[#16233A]/95 sm:backdrop-blur-md border border-white/[0.08] px-3 py-1.5 rounded shadow-lg">
           <div className="flex items-center gap-2">
             <Crosshair className="w-3.5 h-3.5 text-[#FF7A00] animate-spin" style={{ animationDuration: '8s' }} />
             <span className="text-[11px] font-mono text-zinc-200">

@@ -35,58 +35,28 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
   const lastDrawnFrameRef = useRef(-1);
   const lastUiUpdateRef = useRef(0);
   const rafIdRef = useRef<number | null>(null);
+  const isLoopActiveRef = useRef(false);
 
-  // Fast direct canvas draw routine (optimized for 60fps on low-end hardware)
+  // Cached geometry and canvas draw parameters (calculated ONLY on resize, NEVER during scroll/draw)
+  const scrollGeometryRef = useRef({
+    containerTop: 0,
+    totalScrollable: 1,
+  });
+
+  const canvasDrawParamsRef = useRef({
+    renderW: 1920,
+    renderH: 1080,
+    offsetX: 0,
+    offsetY: 0,
+  });
+
+  // Fast direct canvas draw routine (0 DOM reads, pure GPU draw)
   const renderFrameToCanvas = useCallback(
     (canvas: HTMLCanvasElement, frame: DrawableFrame) => {
       const ctx = canvas.getContext('2d', { alpha: false });
       if (!ctx) return;
 
-      const displayWidth = canvas.clientWidth || window.innerWidth;
-      const displayHeight = canvas.clientHeight || window.innerHeight;
-
-      // Cap internal canvas buffer to max dimension 1920px while preserving viewport aspect ratio
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      let targetW = Math.round(displayWidth * dpr);
-      let targetH = Math.round(displayHeight * dpr);
-
-      const maxDim = 1920;
-      if (targetW > maxDim || targetH > maxDim) {
-        const scale = maxDim / Math.max(targetW, targetH);
-        targetW = Math.round(targetW * scale);
-        targetH = Math.round(targetH * scale);
-      }
-
-      if (canvas.width !== targetW || canvas.height !== targetH) {
-        canvas.width = targetW;
-        canvas.height = targetH;
-      }
-
-      // Aspect ratio calculation for full-screen cover (eliminates letterboxing / black gaps)
-      const imgWidth = (frame as ImageBitmap).width || 1920;
-      const imgHeight = (frame as ImageBitmap).height || 1080;
-      const imgAspect = imgWidth / imgHeight;
-      const canvasAspect = targetW / targetH;
-
-      let renderW = targetW;
-      let renderH = targetH;
-      let offsetX = 0;
-      let offsetY = 0;
-
-      // Object-fit: cover (full screen immersion across mobile and desktop displays)
-      if (canvasAspect > imgAspect) {
-        // Canvas is wider than frame (e.g. ultra-wide display)
-        renderW = targetW;
-        renderH = targetW / imgAspect;
-        offsetY = (targetH - renderH) / 2;
-      } else {
-        // Canvas is taller than frame (e.g. mobile portrait view)
-        renderH = targetH;
-        renderW = targetH * imgAspect;
-        offsetX = (targetW - renderW) / 2;
-      }
-
-      // Draw frame directly (vignette is handled in hardware via CSS overlay)
+      const { renderW, renderH, offsetX, offsetY } = canvasDrawParamsRef.current;
       ctx.drawImage(frame, offsetX, offsetY, renderW, renderH);
     },
     []
@@ -105,38 +75,75 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
     setUiProgress(0);
     setUiFrameIndex(0);
 
-    const handleScroll = () => {
+    // Calculate dimensions & geometry strictly on resize or orientation change
+    const updateGeometryAndCanvas = () => {
       const container = containerRef.current;
+      const canvas = canvasRef.current;
       if (!container) return;
 
+      // 1. Scroll track layout metrics
       const rect = container.getBoundingClientRect();
-      const totalScrollable = rect.height - window.innerHeight;
-      if (totalScrollable <= 0) return;
+      const containerTop = window.scrollY + rect.top;
+      const totalScrollable = Math.max(container.offsetHeight - window.innerHeight, 1);
+      scrollGeometryRef.current = { containerTop, totalScrollable };
 
-      const scrolled = -rect.top;
-      if (window.scrollY === 0 || scrolled <= 0) {
-        targetProgressRef.current = 0;
-        return;
+      // 2. Canvas buffer allocation and cover math
+      if (canvas) {
+        const displayWidth = canvas.clientWidth || window.innerWidth;
+        const displayHeight = canvas.clientHeight || window.innerHeight;
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+
+        let targetW = Math.round(displayWidth * dpr);
+        let targetH = Math.round(displayHeight * dpr);
+        const maxDim = 1920;
+        if (targetW > maxDim || targetH > maxDim) {
+          const scale = maxDim / Math.max(targetW, targetH);
+          targetW = Math.round(targetW * scale);
+          targetH = Math.round(targetH * scale);
+        }
+
+        if (canvas.width !== targetW || canvas.height !== targetH) {
+          canvas.width = targetW;
+          canvas.height = targetH;
+        }
+
+        const imgAspect = 1920 / 1080;
+        const canvasAspect = targetW / targetH;
+        let renderW = targetW;
+        let renderH = targetH;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        if (canvasAspect > imgAspect) {
+          renderW = targetW;
+          renderH = targetW / imgAspect;
+          offsetY = (targetH - renderH) / 2;
+        } else {
+          renderH = targetH;
+          renderW = targetH * imgAspect;
+          offsetX = (targetW - renderW) / 2;
+        }
+
+        canvasDrawParamsRef.current = {
+          renderW,
+          renderH,
+          offsetX,
+          offsetY,
+        };
+
+        lastDrawnFrameRef.current = -1;
       }
-      const raw = scrolled / totalScrollable;
-      targetProgressRef.current = Math.min(Math.max(raw, 0), 1);
     };
 
-    const handleResize = () => {
-      lastDrawnFrameRef.current = -1;
-      handleScroll();
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleResize);
-    handleScroll();
-
-    // 60FPS RAF animation loop with lerp smoothing
+    // 60FPS RAF animation loop with adaptive lerp smoothing
     const updateAnimationLoop = () => {
-      // Exponential smoothing (0.16 lerp factor provides fluid momentum without sluggishness)
       const diff = targetProgressRef.current - currentProgressRef.current;
-      if (Math.abs(diff) > 0.0001) {
-        currentProgressRef.current += diff * 0.16;
+      const absDiff = Math.abs(diff);
+
+      // Adaptive lerp factor: snap faster during fast flick scrolling for instant touch response
+      if (absDiff > 0.0002) {
+        const lerpSpeed = Math.min(0.35, 0.20 + absDiff * 0.45);
+        currentProgressRef.current += diff * lerpSpeed;
       } else {
         currentProgressRef.current = targetProgressRef.current;
       }
@@ -151,7 +158,6 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
       if (frameIdx !== lastDrawnFrameRef.current) {
         const canvas = canvasRef.current;
         if (canvas) {
-          // Find target frame or fallback to nearest loaded frame
           let frame = frames[frameIdx];
           if (!frame) {
             for (let offset = 1; offset < 24; offset++) {
@@ -172,19 +178,47 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
           }
         }
 
-        // Throttle UI text state update to save React render cycles on low-end systems
+        // Throttle UI text state updates to ~16fps to keep main thread free for graphics
         const now = performance.now();
-        if (now - lastUiUpdateRef.current > 35 || p === 1 || p === 0) {
+        if (now - lastUiUpdateRef.current > 60 || p === 1 || p === 0) {
           lastUiUpdateRef.current = now;
           setUiProgress(p);
           setUiFrameIndex(frameIdx);
         }
       }
 
-      rafIdRef.current = requestAnimationFrame(updateAnimationLoop);
+      // Keep loop running while interpolating, pause when settled to preserve mobile battery/CPU
+      if (Math.abs(targetProgressRef.current - currentProgressRef.current) > 0.0002) {
+        rafIdRef.current = requestAnimationFrame(updateAnimationLoop);
+      } else {
+        isLoopActiveRef.current = false;
+        setUiProgress(targetProgressRef.current);
+      }
     };
 
-    rafIdRef.current = requestAnimationFrame(updateAnimationLoop);
+    // Zero-reflow scroll listener (reads window.scrollY directly, 0ms execution)
+    const handleScroll = () => {
+      const { containerTop, totalScrollable } = scrollGeometryRef.current;
+      const y = window.scrollY || window.pageYOffset;
+      const scrolled = y - containerTop;
+      targetProgressRef.current = Math.min(Math.max(scrolled / totalScrollable, 0), 1);
+
+      // Wake up loop on scroll event if not already running
+      if (!isLoopActiveRef.current) {
+        isLoopActiveRef.current = true;
+        rafIdRef.current = requestAnimationFrame(updateAnimationLoop);
+      }
+    };
+
+    const handleResize = () => {
+      updateGeometryAndCanvas();
+      handleScroll();
+    };
+
+    updateGeometryAndCanvas();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleResize);
+    handleScroll();
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -217,7 +251,8 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
           <>
             <canvas
               ref={canvasRef}
-              className="absolute inset-0 w-full h-full object-cover select-none"
+              className="absolute inset-0 w-full h-full object-cover select-none will-change-transform transform-gpu"
+              style={{ transform: 'translateZ(0)' }}
             />
             {!isReady && (
               <img
