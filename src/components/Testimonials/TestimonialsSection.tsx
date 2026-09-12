@@ -15,7 +15,6 @@ interface Testimonial {
   content: string;
   partManufactured: string;
   material: string;
-  deliveryTime: string;
 }
 
 const TESTIMONIALS: Testimonial[] = [
@@ -33,7 +32,6 @@ const TESTIMONIALS: Testimonial[] = [
       'We had a critical validation trial for our Gen-2 electric scooter battery pack. Traditional CNC tooling was quoting 3 weeks. Sologix Energy reviewed our STEP files at 9 AM and had all 40 PA-CF composite brackets delivered to our Whitefield facility the next afternoon. Dimensional tolerance was within ±0.08mm.',
     partManufactured: 'High-Voltage Battery Mounting Brackets',
     material: 'PA-CF (Carbon Nylon)',
-    deliveryTime: '22 Hours Delivery',
   },
   {
     id: '2',
@@ -49,7 +47,6 @@ const TESTIMONIALS: Testimonial[] = [
       'The optical accuracy and absence of layer scar marks on our surgical drill guide prototypes were remarkable. Their team suggested subtle draft angle compensations during DFM review that saved us two complete tooling iterations. Highly recommend for precision healthcare hardware.',
     partManufactured: 'Ergonomic Surgical Handpiece Enclosures',
     material: 'Medical PETG',
-    deliveryTime: 'Same-Week SLA',
   },
   {
     id: '3',
@@ -65,7 +62,6 @@ const TESTIMONIALS: Testimonial[] = [
       'As a defense and UAV startup, data confidentiality and strength-to-weight ratios are paramount. Sologix signed our bilateral NDA within 30 minutes. The gyroid infill density in our carbon-reinforced drone motor mounts gave us 35% mass reduction while passing 8G vibration testing.',
     partManufactured: 'UAV Octocopter Motor Arms & Cowlings',
     material: 'PETG-CF / Carbon Fiber',
-    deliveryTime: '36 Hours Delivery',
   },
   {
     id: '4',
@@ -81,7 +77,6 @@ const TESTIMONIALS: Testimonial[] = [
       'The speed of iteration has completely changed our product roadmap. We iterated through 6 mechanical enclosure designs in 10 days. The brass threaded heat-set inserts were installed perfectly straight without any plastic flash. A game changer for Indian hardware founders.',
     partManufactured: 'Smart IoT Home Gateway Enclosures',
     material: 'High-Impact ABS',
-    deliveryTime: '24 Hours Delivery',
   },
   {
     id: '5',
@@ -97,7 +92,6 @@ const TESTIMONIALS: Testimonial[] = [
       'We needed 150 assembly fixtures for our Oragadam automotive assembly line before our main injection mold arrived from Germany. Sologix ran the entire batch with zero variance across all units. Go/No-Go gauge testing showed 100% yield.',
     partManufactured: 'Shop-Floor Robotic Sensor Calibration Jigs',
     material: 'PLA Tough / Industrial',
-    deliveryTime: '2 Days Batch SLA',
   },
 ];
 
@@ -200,7 +194,7 @@ export const TestimonialsSection: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Part & Delivery Details Badge */}
+                {/* Part & Material Details Badge */}
                 <div className="pt-4 border-t border-[#C9DBEC]/60">
                   <div className="p-2.5 rounded bg-[#F5F8FC] border border-[#C9DBEC] mb-4 text-[11px] font-mono space-y-1">
                     <div className="flex justify-between text-[#5B6B7F]">
@@ -210,10 +204,6 @@ export const TestimonialsSection: React.FC = () => {
                     <div className="flex justify-between text-[#5B6B7F]">
                       <span>Material:</span>
                       <span className="text-[#FF7A00] font-medium">{t.material}</span>
-                    </div>
-                    <div className="flex justify-between text-[#5B6B7F]">
-                      <span>Speed:</span>
-                      <span className="text-emerald-700 font-medium">{t.deliveryTime}</span>
                     </div>
                   </div>
 
