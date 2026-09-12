@@ -1,5 +1,5 @@
 /**
- * Sologix Energy - Google Apps Script Webhook
+ * Sologix Energy - Google Apps Script Webhook (Production v2)
  *
  * Deployed as a Web App:
  * - Execute as: Me
@@ -9,6 +9,9 @@
 // CONFIGURATION: Replace with your actual Drive Folder Name and Sheet Name
 const DRIVE_FOLDER_NAME = "Sologix_CAD_Uploads";
 const SHEET_NAME = "Quote_Submissions";
+
+// Maximum allowable binary payload in base64 (~50MB binary = ~68MB base64)
+const MAX_BASE64_LENGTH = 50 * 1024 * 1024 * 1.37;
 
 /**
  * ONE-TIME AUTHORIZATION TRIGGER:
@@ -26,29 +29,47 @@ function authorizePermissions() {
 
 function doPost(e) {
   try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return createJsonResponse({
+        success: false,
+        error: "Bad Request: Empty payload received"
+      });
+    }
+
     const data = JSON.parse(e.postData.contents);
     
-    const timestamp = new Date().toISOString();
-    const fullName = data.fullName || "Anonymous";
-    const phone = data.phone || "Not Provided";
-    const email = data.email || "Not Provided";
-    const address = data.address || "Not Provided";
+    // Server-side abuse protection & validation
+    const fullName = (data.fullName || "").trim();
+    const phone = (data.phone || "").trim();
+    const email = (data.email || "").trim();
+    const address = (data.address || "").trim();
     const projectType = data.projectType || "General Quote";
     const material = data.material || "Standard";
     const notes = data.notes || "";
-    
+
+    if (!fullName || !phone || !email) {
+      return createJsonResponse({
+        success: false,
+        error: "Validation failed: fullName, phone, and email are required fields."
+      });
+    }
+
+    // Server-side fileData size cap (~50MB)
+    if (data.fileData && data.fileData.length > MAX_BASE64_LENGTH) {
+      return createJsonResponse({
+        success: false,
+        error: "Payload too large: Attached CAD file exceeds the 50MB limit."
+      });
+    }
+
+    const timestamp = new Date().toISOString();
     let fileUrl = "No file attached";
-    let fileName = "None";
-    let fileSize = "0 KB";
+    let fileName = data.fileName ? String(data.fileName).replace(/[^a-zA-Z0-9._-]/g, '_') : "None";
+    let fileSize = data.fileSize || "0 KB";
 
     // Handle File Upload to Google Drive
     if (data.fileData && data.fileName) {
-      fileName = data.fileName;
-      fileSize = data.fileSize || "Unknown";
-      
-      let step = "1: init";
       try {
-        step = "2: decode base64";
         const decodedBytes = Utilities.base64Decode(data.fileData);
         const blob = Utilities.newBlob(
           decodedBytes,
@@ -56,23 +77,18 @@ function doPost(e) {
           `${Date.now()}_${fileName}`
         );
         
-        step = "3: getFoldersByName";
         let targetFolder;
         const folders = DriveApp.getFoldersByName(DRIVE_FOLDER_NAME);
         if (folders.hasNext()) {
           targetFolder = folders.next();
         } else {
-          step = "4: createFolder";
           targetFolder = DriveApp.createFolder(DRIVE_FOLDER_NAME);
         }
         
-        step = "5: createFile";
         const driveFile = targetFolder.createFile(blob);
-        
-        step = "6: getUrl";
         fileUrl = driveFile.getUrl();
       } catch (driveErr) {
-        fileUrl = "Drive Error at step [" + step + "]: " + driveErr.message;
+        fileUrl = "Drive Error: " + driveErr.message;
       }
     }
 
@@ -111,16 +127,24 @@ function doPost(e) {
       notes
     ]);
 
-    return ContentService.createTextOutput(JSON.stringify({
-      status: "success",
+    return createJsonResponse({
+      success: true,
       message: "Lead recorded successfully",
       driveFileUrl: fileUrl
-    })).setMimeType(ContentService.MimeType.JSON);
+    });
 
   } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({
-      status: "error",
-      message: error.toString()
-    })).setMimeType(ContentService.MimeType.JSON);
+    return createJsonResponse({
+      success: false,
+      error: error.toString()
+    });
   }
+}
+
+/**
+ * Returns a JSON output with MIME type application/json
+ */
+function createJsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
 }

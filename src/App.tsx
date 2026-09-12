@@ -1,11 +1,14 @@
 import { useState, lazy, Suspense } from 'react';
 import { Navbar } from './components/Navbar';
 import { ScrollPrinterHero } from './components/Hero/ScrollPrinterHero';
+import { TrustStatsBar } from './components/Hero/TrustStatsBar';
 import { ServicesSection } from './components/Services/ServicesSection';
 import { ProcessWorkflow } from './components/Process/ProcessWorkflow';
 import { MaterialsCatalog } from './components/Materials/MaterialsCatalog';
 import { ApplicationsGrid } from './components/Applications/ApplicationsGrid';
 import { EditorialSection } from './components/WhySologix/EditorialSection';
+import { TestimonialsSection } from './components/Testimonials/TestimonialsSection';
+import { FAQSection } from './components/FAQ/FAQSection';
 import { ProjectIntakeForm } from './components/Intake/ProjectIntakeForm';
 import { Footer } from './components/Footer';
 
@@ -52,7 +55,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-[#F0EDEE] flex flex-col selection:bg-[#FF7A00] selection:text-black font-sans">
+    <div className="min-h-screen bg-[#0D1520] text-[#F0EDEE] flex flex-col selection:bg-[#FF7A00] selection:text-black font-sans">
       {/* Floating Navbar */}
       <Navbar onOpenQuote={scrollToQuote} />
 
@@ -62,6 +65,9 @@ export default function App() {
           onStartProject={scrollToQuote}
           onExploreServices={scrollToServices}
         />
+
+        {/* Industrial Social Proof & Trust Metrics Bar */}
+        <TrustStatsBar />
 
         {/* Section 02: What We Do */}
         <ServicesSection onSelectService={handleSelectService} />
@@ -75,7 +81,7 @@ export default function App() {
         {/* Section 05: Interactive 3D Model Preview (Capability Demonstrations) */}
         <Suspense
           fallback={
-            <div className="py-24 bg-[#0A0A0B] text-center text-xs font-mono text-zinc-500 uppercase tracking-widest">
+            <div className="py-24 bg-[#0D1520] text-center text-xs font-mono text-zinc-500 uppercase tracking-widest">
               Initializing 3D WebGL Canvas...
             </div>
           }
@@ -89,7 +95,13 @@ export default function App() {
         {/* Section 07: Why Sologix Energy */}
         <EditorialSection />
 
-        {/* Section 08: Simplified Project Intake & Quote Form */}
+        {/* Section 08: Verified Indian Hardware Testimonials */}
+        <TestimonialsSection />
+
+        {/* Section 09: Frequently Asked Questions */}
+        <FAQSection />
+
+        {/* Section 10: Simplified Project Intake & Quote Form */}
         <ProjectIntakeForm
           initialService={selectedServiceForQuote}
           initialMaterial={selectedMaterialForQuote}

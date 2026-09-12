@@ -86,6 +86,15 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
   useEffect(() => {
     if (prefersReducedMotion) return;
 
+    // Enforce 0% print progress on page refresh/initial mount
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
+    }
+    targetProgressRef.current = 0;
+    currentProgressRef.current = 0;
+    setUiProgress(0);
+    setUiFrameIndex(0);
+
     const handleScroll = () => {
       const container = containerRef.current;
       if (!container) return;
@@ -95,6 +104,10 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
       if (totalScrollable <= 0) return;
 
       const scrolled = -rect.top;
+      if (window.scrollY === 0 || scrolled <= 0) {
+        targetProgressRef.current = 0;
+        return;
+      }
       const raw = scrolled / totalScrollable;
       targetProgressRef.current = Math.min(Math.max(raw, 0), 1);
     };
@@ -178,15 +191,11 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
   return (
     <section
       ref={containerRef}
-      className="relative w-full h-[450vh] bg-[#0A0A0B]"
+      className="relative w-full h-[450vh] bg-[#0D1520]"
       id="hero-track"
     >
       {/* Pinned Sticky Viewport Container */}
       <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
-        {/* Semantic H1 for SEO Integrity (Visually unhindered) */}
-        <h1 className="sr-only">
-          Sologix Energy — Precision Additive Manufacturing & Industrial 3D Printing
-        </h1>
 
         {/* Background Visual Layer */}
         {!prefersReducedMotion ? (
@@ -211,7 +220,7 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
               alt="Sologix Energy High-Precision 3D Printer"
               className="w-full h-full object-cover brightness-75"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0B] via-[#0A0A0B]/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0D1520] via-[#0D1520]/40 to-transparent" />
           </div>
         )}
 
@@ -228,7 +237,7 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
         {/* Completion Milestone Bar (Appears only when print is 100% complete, docked cleanly at bottom) */}
         {uiProgress >= 0.94 && (
           <div className="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-30 w-full max-w-xl px-4 pointer-events-auto animate-fade-in">
-            <div className="p-4 sm:p-5 rounded-sm bg-[#0A0A0B]/90 border border-[#FF7A00]/50 backdrop-blur-xl shadow-[0_0_30px_rgba(255,122,0,0.25)] flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="p-4 sm:p-5 rounded-sm bg-[#16233A]/95 border border-[#FF7A00]/50 backdrop-blur-xl shadow-[0_0_30px_rgba(255,122,0,0.25)] flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-center sm:text-left">
                 <span className="text-xs font-mono tracking-widest text-[#FF7A00] uppercase font-bold block">
                   3D PRINT COMPLETED // 240 FRAMES
@@ -251,7 +260,7 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
                 <button
                   type="button"
                   onClick={onExploreServices}
-                  className="px-4 py-2.5 rounded-sm bg-[#16161A] hover:bg-[#202026] text-zinc-200 font-mono text-xs uppercase tracking-wider border border-white/10 transition-all"
+                  className="px-4 py-2.5 rounded-sm bg-[#0D1520] hover:bg-[#1E2D4A] text-zinc-200 font-mono text-xs uppercase tracking-wider border border-white/[0.08] transition-all"
                 >
                   Explore
                 </button>

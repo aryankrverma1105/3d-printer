@@ -1,12 +1,15 @@
 import React from 'react';
 import { APPLICATIONS } from '../../data/applications';
 import { ArrowRight, Compass, Shield, Wrench, Cuboid as Cube, Cpu } from 'lucide-react';
+import { useInView } from '../../hooks/useInView';
 
 interface ApplicationsGridProps {
   onSelectApplication: (appTitle: string) => void;
 }
 
 export const ApplicationsGrid: React.FC<ApplicationsGridProps> = ({ onSelectApplication }) => {
+  const { ref, inView } = useInView({ threshold: 0.1 });
+
   const iconMap: Record<string, React.ElementType> = {
     'functional-prototypes': Cube,
     'industrial-jigs': Wrench,
@@ -17,62 +20,79 @@ export const ApplicationsGrid: React.FC<ApplicationsGridProps> = ({ onSelectAppl
   };
 
   return (
-    <section id="applications" className="relative py-28 bg-[#0E0E10] border-t border-white/5">
+    <section id="applications" ref={ref} className="relative py-20 bg-[#F5F8FC] text-[#1F2937] border-t border-slate-200/60">
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+        <div
+          className={`flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6 transition-all duration-700 ${
+            inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+          }`}
+        >
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-2 h-2 rounded-full bg-[#FF7A00]" />
-              <span className="text-xs font-mono text-[#FF7A00] tracking-widest uppercase font-semibold">
-                SECTION 05 // USE CASES
-              </span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 rounded-full bg-[#FF7A00]/10 border border-[#FF7A00]/30 text-[#FF7A00] font-mono text-xs uppercase tracking-widest font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A00]" />
+              <span>05 // USE CASES & APPLICATIONS</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-black text-white tracking-tight uppercase">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-black text-[#0F1A2B] tracking-tight uppercase">
               ENGINEERED APPLICATIONS
             </h2>
           </div>
-          <p className="max-w-md text-zinc-400 text-sm font-sans leading-relaxed">
-            From one-off ergonomic models to mission-critical assembly jigs, explore how precision additive manufacturing solves physical engineering challenges.
+          <p className="max-w-md text-[#5B6B7F] text-xs sm:text-sm font-sans leading-relaxed">
+            From precision snap-fit enclosures to structural shop-floor jigs, explore how on-demand additive manufacturing solves physical hardware bottlenecks.
           </p>
         </div>
 
         {/* Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          {APPLICATIONS.map((app) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {APPLICATIONS.map((app, idx) => {
             const Icon = iconMap[app.id] || Cube;
+            const isBlueBadge = idx % 2 === 1;
             return (
               <div
                 key={app.id}
-                className="group relative p-5 sm:p-6 rounded-sm bg-[#121214] border border-white/5 hover:border-[#FF7A00]/40 transition-all duration-300 hover:shadow-[0_0_25px_rgba(255,122,0,0.12)] flex flex-col justify-between"
+                style={{ transitionDelay: `${idx * 60}ms` }}
+                className={`group relative p-6 sm:p-7 rounded-sm bg-white shadow-[0_2px_12px_rgba(15,26,43,0.06)] hover:shadow-[0_8px_24px_rgba(15,26,43,0.12)] flex flex-col justify-between transition-all duration-300 ${
+                  inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}
               >
                 <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-mono tracking-widest text-[#FF7A00] font-bold">
+                  <div className="flex items-center justify-between mb-5">
+                    <span
+                      className={`text-xs font-mono tracking-widest font-bold uppercase ${
+                        isBlueBadge ? 'text-[#2E90D9]' : 'text-[#FF7A00]'
+                      }`}
+                    >
                       {app.tag}
                     </span>
-                    <div className="w-8 h-8 rounded-sm bg-[#18181D] border border-white/10 flex items-center justify-center text-zinc-300 group-hover:text-[#FF7A00] group-hover:border-[#FF7A00]/40 transition-colors">
-                      <Icon className="w-4 h-4" />
+                    {/* Circular Icon Badge with alternating #2E90D9 accent */}
+                    <div
+                      className={`w-11 h-11 rounded-full flex items-center justify-center group-hover:scale-105 transition-all duration-200 ${
+                        isBlueBadge
+                          ? 'bg-[#2E90D9]/10 border border-[#2E90D9]/30 text-[#2E90D9] group-hover:bg-[#2E90D9]/20'
+                          : 'bg-[#FF7A00]/10 border border-[#FF7A00]/30 text-[#FF7A00] group-hover:bg-[#FF7A00]/20'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" aria-hidden="true" />
                     </div>
                   </div>
 
-                  <h3 className="text-lg sm:text-xl font-display font-bold text-white mb-2 group-hover:text-[#FF7A00] transition-colors">
+                  <h3 className="text-xl font-display font-bold text-[#0F1A2B] mb-2.5 group-hover:text-[#FF7A00] transition-colors">
                     {app.title}
                   </h3>
 
-                  <p className="text-xs sm:text-sm text-zinc-300 font-sans leading-relaxed mb-4">
+                  <p className="text-xs sm:text-sm text-[#5B6B7F] font-sans leading-relaxed mb-6">
                     {app.description}
                   </p>
                 </div>
 
-                <div className="pt-3.5 border-t border-white/10">
-                  <div className="space-y-1.5 mb-4 text-xs sm:text-sm font-mono">
-                    <div className="flex justify-between text-zinc-300">
-                      <span>Lead Time:</span>
-                      <span className="text-zinc-100 font-semibold">{app.leadTime}</span>
+                <div className="pt-4 border-t border-slate-100">
+                  <div className="space-y-2 mb-5 text-xs font-mono">
+                    <div className="flex justify-between text-[#5B6B7F]">
+                      <span>Dispatch SLA:</span>
+                      <span className="text-[#1F2937] font-semibold">{app.leadTime}</span>
                     </div>
-                    <div className="flex justify-between text-zinc-300">
-                      <span>Materials:</span>
+                    <div className="flex justify-between text-[#5B6B7F]">
+                      <span>Target Polymers:</span>
                       <span className="text-[#FF7A00] font-semibold">{app.typicalMaterials.join(', ')}</span>
                     </div>
                   </div>
@@ -80,10 +100,10 @@ export const ApplicationsGrid: React.FC<ApplicationsGridProps> = ({ onSelectAppl
                   <button
                     type="button"
                     onClick={() => onSelectApplication(app.title)}
-                    className="w-full py-2 px-3.5 rounded-sm bg-[#16161A] hover:bg-[#FF7A00] text-zinc-200 hover:text-black font-mono text-xs sm:text-sm font-bold uppercase tracking-wider flex items-center justify-between transition-colors duration-200"
+                    className="w-full py-2.5 px-4 rounded-sm bg-[#0D1520] hover:bg-[#FF7A00] text-white hover:text-black font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-all duration-200 shadow-sm hover:shadow-[0_0_15px_rgba(255,122,0,0.3)]"
                   >
-                    <span>Request Application Quote</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <span>Quote This Application</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>

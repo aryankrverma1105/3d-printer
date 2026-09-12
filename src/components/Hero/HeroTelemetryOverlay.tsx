@@ -22,8 +22,8 @@ export const HeroTelemetryOverlay: React.FC<HeroTelemetryOverlayProps> = ({
     <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-4 sm:p-8 lg:p-12 pt-24 sm:pt-28 lg:pt-32">
       {/* Top Technical HUD Bar */}
       <div className="flex items-start justify-between w-full">
-        {/* System Telemetry Badge */}
-        <div className="flex items-center gap-2 px-3.5 py-2 rounded-sm bg-[#121214]/90 border border-white/10 backdrop-blur-md">
+        {/* System Telemetry Badge with subtle anti-gravity float */}
+        <div className="flex items-center gap-2 px-3.5 py-2 rounded-sm bg-[#16233A]/90 border border-white/[0.08] backdrop-blur-md animate-antigravity-float shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
           <span className="w-2 h-2 rounded-full bg-[#FF7A00] animate-ping" />
           <span className="text-xs sm:text-sm font-mono tracking-widest text-zinc-200 uppercase font-semibold">
             BAMBU LAB X2D // <span className="text-[#FF7A00]">FLEET CORE</span>
@@ -32,7 +32,7 @@ export const HeroTelemetryOverlay: React.FC<HeroTelemetryOverlayProps> = ({
 
         {/* Machine Telemetry Readout */}
         <div className="hidden sm:flex flex-col items-end gap-1.5 font-mono text-xs text-zinc-300">
-          <div className="flex items-center gap-4 bg-[#121214]/90 border border-white/10 backdrop-blur-md px-4 py-2 rounded">
+          <div className="flex items-center gap-4 bg-[#16233A]/90 border border-white/[0.08] backdrop-blur-md px-4 py-2 rounded">
             <span className="flex items-center gap-1.5 text-zinc-200">
               <Thermometer className="w-3.5 h-3.5 text-[#FF7A00]" />
               <span>NOZZLE: <strong className="text-white">{simulatedExtruderTemp}°C</strong></span>
@@ -57,8 +57,26 @@ export const HeroTelemetryOverlay: React.FC<HeroTelemetryOverlayProps> = ({
         </div>
       </div>
 
-      {/* Center Reticle Corner Marks */}
-      <div className="absolute inset-16 pointer-events-none hidden md:block opacity-25">
+      {/* Hero Headline Overlay (Visible on scrub start, eases away as user inspects printer) */}
+      <div
+        className={`pointer-events-auto max-w-lg transition-all duration-500 mt-1 sm:mt-2 ${
+          progress > 0.22 ? 'opacity-0 translate-y-3 pointer-events-none' : 'opacity-100 translate-y-0'
+        }`}
+      >
+        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#FF7A00]/10 border border-[#FF7A00]/30 text-[#FF7A00] font-mono text-[11px] uppercase tracking-widest mb-2 backdrop-blur-md">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A00]" />
+          00 // ON-DEMAND ADDITIVE MANUFACTURING
+        </div>
+        <h1 className="text-xl sm:text-3xl lg:text-4xl font-display font-black text-white tracking-tight uppercase leading-[1.12] drop-shadow-[0_4px_16px_rgba(0,0,0,0.85)]">
+          Precision 3D Printing & Serial Production
+        </h1>
+        <p className="text-xs sm:text-sm text-zinc-200 mt-1.5 max-w-md font-normal leading-relaxed drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
+          Industrial-grade rapid prototyping and serial batches in 25+ engineering polymers. Calibrated to ±0.1mm tolerance, dispatched in under 24 hours.
+        </p>
+      </div>
+
+      {/* Center Reticle Corner Marks with Anti-Gravity Float */}
+      <div className="absolute inset-16 pointer-events-none hidden md:block opacity-35 animate-antigravity-float">
         <div className="absolute top-0 left-0 w-6 h-6 border-t border-l border-white/40" />
         <div className="absolute top-0 right-0 w-6 h-6 border-t border-r border-white/40" />
         <div className="absolute bottom-0 left-0 w-6 h-6 border-b border-l border-white/40" />
@@ -68,7 +86,7 @@ export const HeroTelemetryOverlay: React.FC<HeroTelemetryOverlayProps> = ({
       {/* Bottom Control Bar */}
       <div className="flex items-end justify-between w-full">
         {/* Machine Control Prompt */}
-        <div className="flex items-center gap-3 bg-[#0A0A0B]/90 border border-white/15 backdrop-blur-md px-4 py-2.5 rounded">
+        <div className="flex items-center gap-3 bg-[#16233A]/90 border border-white/[0.08] backdrop-blur-md px-4 py-2.5 rounded">
           <Crosshair className="w-4 h-4 text-[#FF7A00] animate-spin" style={{ animationDuration: '8s' }} />
           <div className="flex flex-col">
             <span className="text-xs font-mono tracking-widest text-[#FF7A00] uppercase font-bold">
@@ -81,7 +99,7 @@ export const HeroTelemetryOverlay: React.FC<HeroTelemetryOverlayProps> = ({
         </div>
 
         {/* Global Progress Dial / Indicator */}
-        <div className="flex items-center gap-3 bg-[#121214]/90 border border-white/10 backdrop-blur-md px-4 py-2.5 rounded">
+        <div className="flex items-center gap-3 bg-[#16233A]/90 border border-white/[0.08] backdrop-blur-md px-4 py-2.5 rounded">
           <div className="flex flex-col items-end">
             <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider font-medium">
               PRINT PROGRESS

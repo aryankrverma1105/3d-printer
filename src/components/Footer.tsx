@@ -6,13 +6,13 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="relative bg-[#070708] border-t border-white/10 pt-16 pb-12 text-zinc-400 font-sans overflow-hidden">
+    <footer className="relative bg-[#0D1520] border-t border-white/[0.08] pt-16 pb-12 text-zinc-400 font-sans overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-6 pb-12 border-b border-white/5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-6 pb-12 border-b border-white/[0.08]">
           {/* Brand Column */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-sm bg-[#16161A] border border-[#FF7A00]/40 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-sm bg-[#16233A] border border-[#FF7A00]/40 flex items-center justify-center">
                 <div className="w-3.5 h-3.5 border-t-2 border-l-2 border-[#FF7A00] rotate-45 transform" />
               </div>
               <span className="font-display font-bold tracking-tight text-white text-xl">

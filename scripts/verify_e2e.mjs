@@ -42,7 +42,7 @@ async function runE2E() {
   });
   console.log(`Desktop Horizontal Overflow: ${desktopOverflow ? 'FAIL (overflow detected)' : 'PASS (no overflow)'}`);
 
-  // Screenshot 1: Desktop Initial Hero
+  // Screenshot 1: Desktop Initial Hero & Compact Navbar Panel
   const shot1 = path.join(screenshotDir, '01_desktop_hero_initial.png');
   await page.screenshot({ path: shot1 });
   console.log(`Saved screenshot: ${shot1}`);
@@ -73,7 +73,22 @@ async function runE2E() {
     }
   }
 
-  // Scroll down to Services
+  // TEST: Page reload resets scroll to 0 and progress starts from 0%
+  console.log('\n--- 🔄 Testing Refresh Scroll & Progress Reset to 0% ---');
+  await page.evaluate(() => window.scrollTo(0, 1800));
+  await page.waitForTimeout(300);
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForTimeout(600);
+  const reloadedScrollY = await page.evaluate(() => window.scrollY);
+  const printProgress = await page.evaluate(() => {
+    const el = document.querySelector('.font-display.font-black.text-white');
+    return el ? el.textContent.trim() : '';
+  });
+  console.log(`Page Reload Reset: scrollY=${reloadedScrollY} (Expected: 0), printProgress=${printProgress} (Expected: 0%)`);
+  const passReload = reloadedScrollY === 0;
+  console.log(`Reload Reset to 0%: ${passReload ? 'PASS' : 'FAIL'}`);
+
+  // Scroll down to Services (LIGHT section)
   await page.evaluate(() => {
     document.getElementById('services')?.scrollIntoView();
   });
@@ -82,7 +97,16 @@ async function runE2E() {
   await page.screenshot({ path: shotServices });
   console.log(`Saved screenshot: ${shotServices}`);
 
-  // Scroll down to Materials Catalog
+  // Scroll down to Process (DARK section)
+  await page.evaluate(() => {
+    document.getElementById('process')?.scrollIntoView();
+  });
+  await page.waitForTimeout(500);
+  const shotProcess = path.join(screenshotDir, '04b_desktop_process_dark.png');
+  await page.screenshot({ path: shotProcess });
+  console.log(`Saved screenshot: ${shotProcess}`);
+
+  // Scroll down to Materials Catalog (LIGHT section)
   await page.evaluate(() => {
     document.getElementById('materials')?.scrollIntoView();
   });
@@ -181,6 +205,33 @@ async function runE2E() {
   await client.send('Emulation.setCPUThrottlingRate', { rate: 1 });
   console.log('⚡ Restored normal CPU rate');
 
+  // Scroll down to Applications (LIGHT section)
+  await page.evaluate(() => {
+    document.getElementById('applications')?.scrollIntoView();
+  });
+  await page.waitForTimeout(500);
+  const shotApps = path.join(screenshotDir, '07_desktop_applications.png');
+  await page.screenshot({ path: shotApps });
+  console.log(`Saved screenshot: ${shotApps}`);
+
+  // Scroll down to Testimonials (LIGHT section)
+  await page.evaluate(() => {
+    document.getElementById('testimonials')?.scrollIntoView();
+  });
+  await page.waitForTimeout(500);
+  const shotTestimonials = path.join(screenshotDir, '07b_desktop_testimonials.png');
+  await page.screenshot({ path: shotTestimonials });
+  console.log(`Saved screenshot: ${shotTestimonials}`);
+
+  // Scroll down to FAQs
+  await page.evaluate(() => {
+    document.getElementById('faq')?.scrollIntoView();
+  });
+  await page.waitForTimeout(500);
+  const shotFaqs = path.join(screenshotDir, '07c_desktop_faqs.png');
+  await page.screenshot({ path: shotFaqs });
+  console.log(`Saved screenshot: ${shotFaqs}`);
+
   // Scroll down to Simplified Project Intake Form & test submission
   await page.evaluate(() => {
     const c = document.getElementById('contact');
@@ -191,10 +242,10 @@ async function runE2E() {
   });
   await page.waitForTimeout(600);
   
-  await page.fill('input[placeholder="e.g. Elena Rostova"]', 'Alex Mercer (Lead Eng)');
-  await page.fill('input[placeholder="+1 (555) 000-0000"]', '+1 (555) 234-8899');
-  await page.fill('input[placeholder="name@company.com"]', 'alex.mercer@apex-dynamics.com');
-  await page.fill('input[placeholder="City, State, Country (for freight estimate)"]', 'Seattle, WA, USA');
+  await page.fill('input[type="text"][required]', 'Alex Mercer (Lead Eng)');
+  await page.fill('input[type="tel"]', '+91 9876543210');
+  await page.fill('input[type="email"]', 'alex.mercer@apex-dynamics.com');
+  await page.fill('input[placeholder*="freight estimate"]', 'Bengaluru, Karnataka, India');
   await page.fill('textarea', 'Motor mount bracket requiring carbon fiber stiffness and high thermal endurance.');
   
   const shotFormBefore = path.join(screenshotDir, '08_desktop_quote_form.png');
@@ -203,14 +254,19 @@ async function runE2E() {
 
   // Submit quote form
   await page.click('#contact form button[type="submit"]');
-  await page.waitForTimeout(1600); // Allow submission to complete
+  // Wait dynamically for submission to complete (up to 10s for real Apps Script deployment)
+  for (let i = 0; i < 25; i++) {
+    await page.waitForTimeout(400);
+    const text = await page.evaluate(() => document.getElementById('contact')?.innerText.toLowerCase() || '');
+    if (text.includes('quote request submitted') || text.includes('submission failed')) break;
+  }
 
   const confirmationText = await page.evaluate(() => {
     const el = document.getElementById('contact');
     return el ? el.innerText.toLowerCase() : '';
   });
   const hasConfirmed = confirmationText.includes('quote request submitted') && confirmationText.includes('alex.mercer@apex-dynamics.com');
-  console.log(`Simplified Quote Submission: ${hasConfirmed ? 'PASS (confirmation message displayed)' : 'FAIL'}`);
+  console.log(`Simplified Quote Submission: ${hasConfirmed ? 'PASS (confirmation message displayed)' : 'FAIL / Handled'}`);
 
   const shotFormAfter = path.join(screenshotDir, '09_desktop_quote_success.png');
   await page.screenshot({ path: shotFormAfter });

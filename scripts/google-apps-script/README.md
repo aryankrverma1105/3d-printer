@@ -2,6 +2,9 @@
 
 This guide walks you through linking the **Sologix Energy** "Request a Quote" form to a Google Sheet and Google Drive folder.
 
+> [!WARNING]
+> **Security Notice**: Rotate your Google Apps Script deployment URL if it was ever hardcoded, exposed publicly, or committed to a repository before — treat any previously exposed URL as compromised and generate a fresh deployment version.
+
 ---
 
 ### Step 1: Create a Google Sheet
@@ -14,42 +17,56 @@ This guide walks you through linking the **Sologix Energy** "Request a Quote" fo
 1. In the top menu of your Google Sheet, click **Extensions** > **Apps Script**.
 2. Erase any default code in `Code.gs`.
 3. Copy the entire contents of [`scripts/google-apps-script/Code.gs`](./Code.gs) and paste it into the script editor.
-4. Click the **Save** (disk) icon or press `Ctrl + S`.
+4. Press `Ctrl + S` to save.
 
 ---
 
-### Step 3: Deploy as a Web App
-1. At the top right of the Apps Script editor, click **Deploy** > **New deployment**.
-2. Click the gear icon next to "Select type" and choose **Web app**.
-3. Configure the deployment settings:
-   - **Description**: `Sologix Quote Webhook`
-   - **Execute as**: `Me (your_email@gmail.com)`
-   - **Who has access**: `Anyone` *(Crucial: allows anonymous form submissions without requiring users to log in)*
-4. Click **Deploy**.
-
----
-
-### Step 4: Authorize Permissions
-1. Google will display an **"Authorization required"** modal. Click **Authorize access**.
-2. Choose your Google account.
-3. If you see "Google hasn't verified this app", click **Advanced** (bottom left), then click **Go to Untitled project (unsafe)**.
-4. Click **Allow** to grant permission to write to your Sheet and save files to your Google Drive.
-5. Copy the generated **Web app URL** (it will look like `https://script.google.com/macros/s/AKfycbx.../exec`).
-
----
-
-### Step 5: Add URL to your `.env` File
-1. In your project root, create a file named `.env` (or duplicate `.env.example`):
-   ```env
-   VITE_GOOGLE_APPS_SCRIPT_URL=https://script.google.com/macros/s/AKfycbxYOUR_SCRIPT_ID/exec
+### Step 3: Configure Manifest Scopes (`appsscript.json`)
+1. Click **Project Settings** (gear icon ⚙️ on the left sidebar).
+2. Check the box: **"Show 'appsscript.json' manifest file in editor"**.
+3. Click the **Editor** (`< >`) icon on the left sidebar and select **`appsscript.json`**.
+4. Paste the contents of [`scripts/google-apps-script/appsscript.json`](./appsscript.json):
+   ```json
+   {
+     "timeZone": "Asia/Kolkata",
+     "dependencies": {},
+     "exceptionLogging": "STACKDRIVER",
+     "runtimeVersion": "V8",
+     "webapp": {
+       "executeAs": "USER_DEPLOYING",
+       "access": "ANYONE"
+     },
+     "oauthScopes": [
+       "https://www.googleapis.com/auth/spreadsheets",
+       "https://www.googleapis.com/auth/drive"
+     ]
+   }
    ```
-2. Restart your development server (`npm run dev`) or re-build (`npm run build`).
+5. Press `Ctrl + S` to save.
 
 ---
 
-### How It Works Automatically:
-* Whenever a client submits a quote:
-  1. The form sends the payload via `POST` with `mode: no-cors`.
-  2. The Google Apps Script decodes the CAD file (.stl, .step, .obj, .3mf) and saves it into a Google Drive folder named **`Sologix_CAD_Uploads`**.
-  3. The script sets file permissions to "Anyone with the link can view".
-  4. The script appends a formatted row to the sheet **`Quote_Submissions`** with timestamp, client contact details, material, and the clickable Google Drive file URL.
+### Step 4: Authorize Permissions (One-Time)
+1. Select `Code.gs` in the file list.
+2. In the top toolbar dropdown, select **`authorizePermissions`**.
+3. Click **Run** (▶).
+4. Google will pop up an authorization dialog: click **Review permissions** → select your Google Account → click **Advanced** → click **Go to (unsafe)** → click **Allow**.
+
+---
+
+### Step 5: Deploy as a Web App
+1. At the top right, click **Deploy** > **Manage deployments** (or **New deployment**).
+2. Configure deployment:
+   - **Execute as**: `Me`
+   - **Who has access**: `Anyone` *(Crucial: allows website visitors to submit quotes anonymously)*
+   - Set Version to **New version**.
+3. Click **Deploy** and copy the **Web app URL** (`https://script.google.com/macros/s/AKfycbx.../exec`).
+
+---
+
+### Step 6: Add URL to your `.env` File
+In your project root, set the variable in `.env`:
+```env
+VITE_GOOGLE_APPS_SCRIPT_URL=https://script.google.com/macros/s/AKfycbxYOUR_DEPLOYMENT_ID/exec
+```
+*(Never commit `.env` to version control; it is ignored via `.gitignore`)*.
