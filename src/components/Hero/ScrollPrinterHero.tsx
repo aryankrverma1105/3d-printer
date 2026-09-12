@@ -42,20 +42,27 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
       const ctx = canvas.getContext('2d', { alpha: false });
       if (!ctx) return;
 
-      const displayWidth = canvas.clientWidth;
-      const displayHeight = canvas.clientHeight;
+      const displayWidth = canvas.clientWidth || window.innerWidth;
+      const displayHeight = canvas.clientHeight || window.innerHeight;
 
-      // Cap internal canvas buffer to max 1920x1080 (prevents 4K GPU memory bloat on low-end laptops)
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
-      const targetW = Math.min(Math.round(displayWidth * dpr), 1920);
-      const targetH = Math.min(Math.round(displayHeight * dpr), 1080);
+      // Cap internal canvas buffer to max dimension 1920px while preserving viewport aspect ratio
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      let targetW = Math.round(displayWidth * dpr);
+      let targetH = Math.round(displayHeight * dpr);
+
+      const maxDim = 1920;
+      if (targetW > maxDim || targetH > maxDim) {
+        const scale = maxDim / Math.max(targetW, targetH);
+        targetW = Math.round(targetW * scale);
+        targetH = Math.round(targetH * scale);
+      }
 
       if (canvas.width !== targetW || canvas.height !== targetH) {
         canvas.width = targetW;
         canvas.height = targetH;
       }
 
-      // Aspect ratio containment
+      // Aspect ratio calculation for full-screen cover (eliminates letterboxing / black gaps)
       const imgWidth = (frame as ImageBitmap).width || 1920;
       const imgHeight = (frame as ImageBitmap).height || 1080;
       const imgAspect = imgWidth / imgHeight;
@@ -66,14 +73,17 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
       let offsetX = 0;
       let offsetY = 0;
 
+      // Object-fit: cover (full screen immersion across mobile and desktop displays)
       if (canvasAspect > imgAspect) {
-        renderH = targetH;
-        renderW = targetH * imgAspect;
-        offsetX = (targetW - renderW) / 2;
-      } else {
+        // Canvas is wider than frame (e.g. ultra-wide display)
         renderW = targetW;
         renderH = targetW / imgAspect;
         offsetY = (targetH - renderH) / 2;
+      } else {
+        // Canvas is taller than frame (e.g. mobile portrait view)
+        renderH = targetH;
+        renderW = targetH * imgAspect;
+        offsetX = (targetW - renderW) / 2;
       }
 
       // Draw frame directly (vignette is handled in hardware via CSS overlay)
@@ -112,8 +122,13 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
       targetProgressRef.current = Math.min(Math.max(raw, 0), 1);
     };
 
+    const handleResize = () => {
+      lastDrawnFrameRef.current = -1;
+      handleScroll();
+    };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll);
+    window.addEventListener('resize', handleResize);
     handleScroll();
 
     // 60FPS RAF animation loop with lerp smoothing
@@ -159,7 +174,7 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
 
         // Throttle UI text state update to save React render cycles on low-end systems
         const now = performance.now();
-        if (now - lastUiUpdateRef.current > 40 || p === 1 || p === 0) {
+        if (now - lastUiUpdateRef.current > 35 || p === 1 || p === 0) {
           lastUiUpdateRef.current = now;
           setUiProgress(p);
           setUiFrameIndex(frameIdx);
@@ -173,7 +188,7 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
+      window.removeEventListener('resize', handleResize);
       if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);
       }
