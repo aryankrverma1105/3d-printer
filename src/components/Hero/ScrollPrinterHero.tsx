@@ -17,7 +17,7 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const prefersReducedMotion = useReducedMotion();
-  const totalFrames = typeof window !== 'undefined' && window.innerWidth <= 768 ? 80 : 120;
+  const totalFrames = 240;
 
   // High-performance progressive preloader with instant milestone scrubbing
   const { frames, isReady, loadedCount } = useFramePreloader(
@@ -137,9 +137,9 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
       const diff = targetProgressRef.current - currentProgressRef.current;
       const absDiff = Math.abs(diff);
 
-      // Adaptive lerp factor: snap faster during fast flick scrolling for instant touch response
-      if (absDiff > 0.0002) {
-        const lerpSpeed = Math.min(0.35, 0.20 + absDiff * 0.45);
+      // High-velocity responsive tracking: snaps instantly during active gestures, smoothly glides to rest
+      if (absDiff > 0.0001) {
+        const lerpSpeed = Math.min(0.70, 0.42 + absDiff * 0.90);
         currentProgressRef.current += diff * lerpSpeed;
       } else {
         currentProgressRef.current = targetProgressRef.current;
@@ -256,7 +256,7 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
   return (
     <section
       ref={containerRef}
-      className="relative w-full h-[450vh] bg-[#0D1520]"
+      className="relative w-full h-[320vh] bg-[#0D1520]"
       id="hero-track"
     >
       {/* Pinned Sticky Viewport Container */}

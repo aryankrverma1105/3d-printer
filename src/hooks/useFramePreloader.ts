@@ -76,9 +76,9 @@ export function useFramePreloader(
         setIsReady(true);
       }
 
-      // Step 2: Milestone Backbone (~250ms) - load 10 keyframes across the timeline IN PARALLEL
+      // Step 2: Milestone Backbone (~200ms) - load 16 keyframes across the 240 timeline IN PARALLEL
       // This guarantees the animation can scrub across the full 0% - 100% timeline immediately!
-      const milestoneCount = 10;
+      const milestoneCount = 16;
       const milestones: number[] = [];
       for (let i = 0; i < milestoneCount; i++) {
         const idx = Math.min(
@@ -104,13 +104,13 @@ export function useFramePreloader(
       if (isCancelled) return;
       setLoadedCount(loaded);
 
-      // Step 3: Progressive Fill - load intermediate frames (every 3rd frame) in parallel chunks of 6
+      // Step 3: Progressive Fill - load intermediate frames (every 3rd frame) in parallel chunks of 10
       const secondTier: number[] = [];
       for (let i = 0; i < totalFrames; i += 3) {
         if (!framesRef.current[i]) secondTier.push(i);
       }
 
-      const chunkSize = 6;
+      const chunkSize = 10;
       for (let i = 0; i < secondTier.length; i += chunkSize) {
         if (isCancelled) return;
         const chunk = secondTier.slice(i, i + chunkSize);
@@ -123,7 +123,7 @@ export function useFramePreloader(
             }
           })
         );
-        if (loaded % 12 === 0) {
+        if (loaded % 20 === 0) {
           setLoadedCount(loaded);
         }
       }
@@ -131,7 +131,7 @@ export function useFramePreloader(
       if (isCancelled) return;
       setLoadedCount(loaded);
 
-      // Step 4: Stream all remaining frames in parallel chunks with small yields
+      // Step 4: Stream all remaining frames in parallel chunks of 10 with micro-yields
       const remaining: number[] = [];
       for (let i = 0; i < totalFrames; i++) {
         if (!framesRef.current[i]) remaining.push(i);
@@ -149,10 +149,10 @@ export function useFramePreloader(
             }
           })
         );
-        if (loaded % 15 === 0 || loaded === totalFrames) {
+        if (loaded % 20 === 0 || loaded === totalFrames) {
           setLoadedCount(loaded);
         }
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 5));
       }
 
       if (!isCancelled) {
