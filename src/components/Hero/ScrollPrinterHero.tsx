@@ -113,12 +113,12 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
 
         if (canvasAspect > imgAspect) {
           renderW = targetW;
-          renderH = targetW / imgAspect;
-          offsetY = (targetH - renderH) / 2;
+          renderH = Math.round(targetW / imgAspect);
+          offsetY = Math.round((targetH - renderH) / 2);
         } else {
           renderH = targetH;
-          renderW = targetH * imgAspect;
-          offsetX = (targetW - renderW) / 2;
+          renderW = Math.round(targetH * imgAspect);
+          offsetX = Math.round((targetW - renderW) / 2);
         }
 
         canvasDrawParamsRef.current = {
@@ -132,22 +132,33 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
       }
     };
 
-    // 60FPS RAF animation loop with adaptive lerp smoothing
-    const updateAnimationLoop = () => {
+    // RAF animation loop with delta-time compensated smooth motion damping
+    let lastTime = performance.now();
+
+    const updateAnimationLoop = (now: DOMHighResTimeStamp) => {
+      const dt = Math.min(Math.max((now - lastTime) / 1000, 0.001), 0.05);
+      lastTime = now;
+
       const diff = targetProgressRef.current - currentProgressRef.current;
       const absDiff = Math.abs(diff);
 
-      // High-velocity responsive tracking: snaps instantly during active gestures, smoothly glides to rest
-      if (absDiff > 0.0001) {
-        const lerpSpeed = Math.min(0.70, 0.42 + absDiff * 0.90);
-        currentProgressRef.current += diff * lerpSpeed;
+      if (absDiff > 0.00005) {
+        // Delta-time compensated exponential smoothing (frame-rate independent at 60Hz, 120Hz, 144Hz)
+        // Eliminates mouse-wheel stepping and micro-stutter, giving a continuous fluid glide
+        const isTouch =
+          typeof window !== 'undefined' &&
+          (window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window);
+        const decay = isTouch ? 18 : 12;
+        const alpha = 1 - Math.exp(-decay * dt);
+
+        currentProgressRef.current += diff * alpha;
       } else {
         currentProgressRef.current = targetProgressRef.current;
       }
 
       const p = currentProgressRef.current;
       const frameIdx = Math.min(
-        Math.max(Math.floor(p * (totalFrames - 1)), 0),
+        Math.max(Math.round(p * (totalFrames - 1)), 0),
         totalFrames - 1
       );
 
@@ -178,19 +189,19 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
           }
         }
 
-        // Throttle UI text state updates to ~16fps to keep main thread free for graphics
-        const now = performance.now();
-        if (now - lastUiUpdateRef.current > 60 || p === 1 || p === 0) {
+        // Throttle UI text state updates to ~20fps to keep main thread free for graphics
+        if (now - lastUiUpdateRef.current > 50 || p === 1 || p === 0) {
           lastUiUpdateRef.current = now;
           setUiProgress(p);
         }
       }
 
       // Keep loop running while interpolating, pause when settled to preserve mobile battery/CPU
-      if (Math.abs(targetProgressRef.current - currentProgressRef.current) > 0.0002) {
+      if (Math.abs(targetProgressRef.current - currentProgressRef.current) > 0.00008) {
         rafIdRef.current = requestAnimationFrame(updateAnimationLoop);
       } else {
         isLoopActiveRef.current = false;
+        currentProgressRef.current = targetProgressRef.current;
         setUiProgress(targetProgressRef.current);
       }
     };
@@ -205,6 +216,7 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
       // Wake up loop on scroll event if not already running
       if (!isLoopActiveRef.current) {
         isLoopActiveRef.current = true;
+        lastTime = performance.now();
         rafIdRef.current = requestAnimationFrame(updateAnimationLoop);
       }
     };
