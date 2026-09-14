@@ -82,7 +82,7 @@ export const Footer: React.FC = () => {
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-zinc-500">
           <div>
-            © {new Date().getFullYear()} Sologix Energy Inc. All rights reserved. Precision Made Physical.
+            © {new Date().getFullYear()} Sologix Energy Inc. All rights reserved. Design and Developed By Aryan Verma.
           </div>
 
           <button

@@ -11,37 +11,46 @@ interface PreloaderResult {
 }
 
 export function useFramePreloader(
-  totalFrames = 240,
+  totalFrames = 120,
   framePathPattern = './frames/frame_{num}.webp'
 ): PreloaderResult {
   const [loadedCount, setLoadedCount] = useState(0);
   const [isReady, setIsReady] = useState(false);
-  const framesRef = useRef<(DrawableFrame | null)[]>(new Array(totalFrames).fill(null));
+  const framesRef = useRef<(DrawableFrame | null)[]>([]);
+
+  // Keep array sized to totalFrames
+  if (framesRef.current.length !== totalFrames) {
+    framesRef.current = new Array(totalFrames).fill(null);
+  }
 
   useEffect(() => {
     let isCancelled = false;
     let loaded = 0;
 
+    // Reset buffer for current run
+    framesRef.current = new Array(totalFrames).fill(null);
+
+    // Map virtual index (0..totalFrames-1) across the 240 master frames (1..240)
     const getUrl = (index: number) => {
-      const numStr = String(index + 1).padStart(3, '0');
+      const fileIndex = Math.min(
+        Math.round((index / Math.max(totalFrames - 1, 1)) * 239) + 1,
+        240
+      );
+      const numStr = String(fileIndex).padStart(3, '0');
       return framePathPattern.replace('{num}', numStr);
     };
 
-    const screenW = typeof window !== 'undefined' ? window.innerWidth : 1440;
-    const isMobile = screenW <= 768;
-
     const loadSingleFrame = async (index: number): Promise<DrawableFrame | null> => {
+      if (framesRef.current[index]) return framesRef.current[index];
       const url = getUrl(index);
       try {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP error ${res.status}`);
         const blob = await res.blob();
 
-        // Native off-main-thread decode preserving pristine 1080p source clarity
         if (typeof window.createImageBitmap === 'function') {
           return await createImageBitmap(blob);
         } else {
-          // Standard Image element fallback
           return new Promise((resolve) => {
             const img = new Image();
             img.decoding = 'async';
@@ -57,7 +66,7 @@ export function useFramePreloader(
     };
 
     const runPreloadQueue = async () => {
-      // Step 1: Immediately load Frame 0 (first frame) for instant hero paint
+      // Step 1: Immediately load Frame 0 for instant hero mount
       const firstFrame = await loadSingleFrame(0);
       if (isCancelled) return;
       if (firstFrame) {
@@ -67,54 +76,83 @@ export function useFramePreloader(
         setIsReady(true);
       }
 
-      // Step 2: Load keyframe anchors across timeline (every 6th frame) for instant scrub response
-      const anchors: number[] = [];
-      for (let i = 6; i < totalFrames; i += 6) {
-        anchors.push(i);
+      // Step 2: Milestone Backbone (~250ms) - load 10 keyframes across the timeline IN PARALLEL
+      // This guarantees the animation can scrub across the full 0% - 100% timeline immediately!
+      const milestoneCount = 10;
+      const milestones: number[] = [];
+      for (let i = 0; i < milestoneCount; i++) {
+        const idx = Math.min(
+          Math.round((i / Math.max(milestoneCount - 1, 1)) * (totalFrames - 1)),
+          totalFrames - 1
+        );
+        if (!framesRef.current[idx]) {
+          milestones.push(idx);
+        }
       }
 
-      for (const idx of anchors) {
-        if (isCancelled) return;
-        if (!framesRef.current[idx]) {
+      await Promise.all(
+        milestones.map(async (idx) => {
+          if (isCancelled) return;
           const frame = await loadSingleFrame(idx);
           if (frame && !isCancelled) {
             framesRef.current[idx] = frame;
             loaded++;
-            // Batch state updates to avoid React render spam
-            if (loaded % 10 === 0) {
-              setLoadedCount(loaded);
-            }
           }
-        }
+        })
+      );
+
+      if (isCancelled) return;
+      setLoadedCount(loaded);
+
+      // Step 3: Progressive Fill - load intermediate frames (every 3rd frame) in parallel chunks of 6
+      const secondTier: number[] = [];
+      for (let i = 0; i < totalFrames; i += 3) {
+        if (!framesRef.current[i]) secondTier.push(i);
       }
 
-      // Step 3: Stream all remaining frames with device-tuned concurrency
-      const remaining: number[] = [];
-      for (let i = 0; i < totalFrames; i++) {
-        if (!framesRef.current[i]) remaining.push(i);
-      }
-
-      const batchSize = isMobile ? 2 : 4;
-      for (let i = 0; i < remaining.length; i += batchSize) {
+      const chunkSize = 6;
+      for (let i = 0; i < secondTier.length; i += chunkSize) {
         if (isCancelled) return;
-        const chunk = remaining.slice(i, i + batchSize);
+        const chunk = secondTier.slice(i, i + chunkSize);
         await Promise.all(
           chunk.map(async (idx) => {
             const frame = await loadSingleFrame(idx);
             if (frame && !isCancelled) {
               framesRef.current[idx] = frame;
               loaded++;
-              if (loaded % 20 === 0 || loaded === totalFrames) {
-                setLoadedCount(loaded);
-              }
             }
           })
         );
-
-        // Yield to browser main thread on mobile to ensure 60FPS scroll compositing
-        if (isMobile) {
-          await new Promise((resolve) => setTimeout(resolve, 16));
+        if (loaded % 12 === 0) {
+          setLoadedCount(loaded);
         }
+      }
+
+      if (isCancelled) return;
+      setLoadedCount(loaded);
+
+      // Step 4: Stream all remaining frames in parallel chunks with small yields
+      const remaining: number[] = [];
+      for (let i = 0; i < totalFrames; i++) {
+        if (!framesRef.current[i]) remaining.push(i);
+      }
+
+      for (let i = 0; i < remaining.length; i += chunkSize) {
+        if (isCancelled) return;
+        const chunk = remaining.slice(i, i + chunkSize);
+        await Promise.all(
+          chunk.map(async (idx) => {
+            const frame = await loadSingleFrame(idx);
+            if (frame && !isCancelled) {
+              framesRef.current[idx] = frame;
+              loaded++;
+            }
+          })
+        );
+        if (loaded % 15 === 0 || loaded === totalFrames) {
+          setLoadedCount(loaded);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
 
       if (!isCancelled) {
@@ -126,12 +164,6 @@ export function useFramePreloader(
 
     return () => {
       isCancelled = true;
-      // Close bitmaps to free GPU memory on unmount
-      framesRef.current.forEach((item) => {
-        if (item && 'close' in item && typeof item.close === 'function') {
-          item.close();
-        }
-      });
     };
   }, [totalFrames, framePathPattern]);
 

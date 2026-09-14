@@ -17,22 +17,25 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const prefersReducedMotion = useReducedMotion();
-  const totalFrames = 240;
+  const totalFrames = typeof window !== 'undefined' && window.innerWidth <= 768 ? 80 : 120;
 
-  // Optimized Preloader with memory-capping for low-end systems
-  const { frames, isReady } = useFramePreloader(
+  // High-performance progressive preloader with instant milestone scrubbing
+  const { frames, isReady, loadedCount } = useFramePreloader(
     totalFrames,
     './frames/frame_{num}.webp'
   );
 
+  const framesRef = useRef(frames);
+  framesRef.current = frames;
+
   // Decoupled UI telemetry state (throttled to avoid 60fps React re-renders)
   const [uiProgress, setUiProgress] = useState(0);
-  const [uiFrameIndex, setUiFrameIndex] = useState(0);
 
   // Scrub interpolation refs
   const targetProgressRef = useRef(0);
   const currentProgressRef = useRef(0);
   const lastDrawnFrameRef = useRef(-1);
+  const lastDrawnActualFrameRef = useRef<DrawableFrame | null>(null);
   const lastUiUpdateRef = useRef(0);
   const rafIdRef = useRef<number | null>(null);
   const isLoopActiveRef = useRef(false);
@@ -65,18 +68,9 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
     []
   );
 
-  // High-performance scroll animation loop
+  // High-performance scroll animation loop (attached ONCE, never re-triggered on frame arrivals)
   useEffect(() => {
     if (prefersReducedMotion) return;
-
-    // Enforce 0% print progress on page refresh/initial mount
-    if (typeof window !== 'undefined') {
-      window.scrollTo(0, 0);
-    }
-    targetProgressRef.current = 0;
-    currentProgressRef.current = 0;
-    setUiProgress(0);
-    setUiFrameIndex(0);
 
     // Calculate dimensions & geometry strictly on resize or orientation change
     const updateGeometryAndCanvas = () => {
@@ -161,16 +155,18 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
       if (frameIdx !== lastDrawnFrameRef.current) {
         const canvas = canvasRef.current;
         if (canvas) {
-          let frame = frames[frameIdx];
+          const currentFrames = framesRef.current;
+          let frame = currentFrames[frameIdx];
           if (!frame) {
-            for (let offset = 1; offset < 24; offset++) {
-              if (frameIdx - offset >= 0 && frames[frameIdx - offset]) {
-                frame = frames[frameIdx - offset];
-                break;
-              }
-              if (frameIdx + offset < totalFrames && frames[frameIdx + offset]) {
-                frame = frames[frameIdx + offset];
-                break;
+            // Find closest loaded frame anywhere in sequence (prevents frozen/blank canvas)
+            let bestDist = Infinity;
+            for (let i = 0; i < totalFrames; i++) {
+              if (currentFrames[i]) {
+                const dist = Math.abs(i - frameIdx);
+                if (dist < bestDist) {
+                  bestDist = dist;
+                  frame = currentFrames[i];
+                }
               }
             }
           }
@@ -178,6 +174,7 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
           if (frame) {
             renderFrameToCanvas(canvas, frame);
             lastDrawnFrameRef.current = frameIdx;
+            lastDrawnActualFrameRef.current = frame;
           }
         }
 
@@ -186,7 +183,6 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
         if (now - lastUiUpdateRef.current > 60 || p === 1 || p === 0) {
           lastUiUpdateRef.current = now;
           setUiProgress(p);
-          setUiFrameIndex(frameIdx);
         }
       }
 
@@ -230,15 +226,32 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
         cancelAnimationFrame(rafIdRef.current);
       }
     };
-  }, [frames, prefersReducedMotion, totalFrames, renderFrameToCanvas]);
+  }, [prefersReducedMotion, totalFrames, renderFrameToCanvas]);
 
   // Redraw initial frame when first loaded
   useEffect(() => {
     if (isReady && canvasRef.current && frames[0] && lastDrawnFrameRef.current === -1) {
       renderFrameToCanvas(canvasRef.current, frames[0]);
       lastDrawnFrameRef.current = 0;
+      lastDrawnActualFrameRef.current = frames[0];
     }
   }, [isReady, frames, renderFrameToCanvas]);
+
+  // Progressive real-time refinement: when background frames finish loading, sharpen current view
+  useEffect(() => {
+    if (!canvasRef.current || !frames) return;
+    const p = currentProgressRef.current;
+    const frameIdx = Math.min(
+      Math.max(Math.floor(p * (totalFrames - 1)), 0),
+      totalFrames - 1
+    );
+    const frame = frames[frameIdx];
+    if (frame && lastDrawnActualFrameRef.current !== frame) {
+      renderFrameToCanvas(canvasRef.current, frame);
+      lastDrawnActualFrameRef.current = frame;
+      lastDrawnFrameRef.current = frameIdx;
+    }
+  }, [loadedCount, frames, totalFrames, renderFrameToCanvas]);
 
   return (
     <section
@@ -283,8 +296,8 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
         {/* Telemetry & Technical HUD (Corner-docked, zero interference with chamber) */}
         <HeroTelemetryOverlay
           progress={uiProgress}
-          currentFrame={uiFrameIndex + 1}
-          totalFrames={totalFrames}
+          currentFrame={Math.min(Math.round(uiProgress * 239) + 1, 240)}
+          totalFrames={240}
         />
 
         {/* Completion Milestone Bar (Appears only when print is 100% complete, docked cleanly at bottom) */}
