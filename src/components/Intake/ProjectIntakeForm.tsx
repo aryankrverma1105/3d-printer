@@ -5,14 +5,12 @@ interface ProjectIntakeFormProps {
   initialService?: string;
   initialMaterial?: string;
   id?: string;
-  isMobileTopPlacement?: boolean;
 }
 
 export const ProjectIntakeForm: React.FC<ProjectIntakeFormProps> = ({
   initialService = 'Rapid Prototyping',
   initialMaterial = 'PLA / PLA Carbon Fiber',
   id = 'contact',
-  isMobileTopPlacement = false,
 }) => {
   // Contact & Delivery Details
   const [fullName, setFullName] = useState('');
@@ -158,7 +156,7 @@ export const ProjectIntakeForm: React.FC<ProjectIntakeFormProps> = ({
         <div className="text-center max-w-3xl mx-auto mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 rounded-full bg-[#FF7A00]/10 border border-[#FF7A00]/30 text-[#FF7A00] font-mono text-xs uppercase tracking-widest font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A00]" />
-            <span>{isMobileTopPlacement ? '02 // INSTANT CAD QUOTATION & INTAKE' : '07 // DFM EVALUATION & QUOTE INTAKE'}</span>
+            <span>INSTANT CAD QUOTATION & DFM EVALUATION</span>
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-black text-[#0F1A2B] tracking-tight uppercase">
             HAVE A DESIGN IN MIND? GET A QUOTE
