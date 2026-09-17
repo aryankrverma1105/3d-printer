@@ -226,6 +226,7 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
       handleScroll();
     };
 
+    isLoopActiveRef.current = false;
     updateGeometryAndCanvas();
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleResize);
@@ -236,7 +237,9 @@ export const ScrollPrinterHero: React.FC<ScrollPrinterHeroProps> = ({
       window.removeEventListener('resize', handleResize);
       if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
       }
+      isLoopActiveRef.current = false;
     };
   }, [prefersReducedMotion, totalFrames, renderFrameToCanvas]);
 
