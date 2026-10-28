@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://sologixenergy.com/sitemap.xml
+Sitemap: https://qxlab.in/sitemap.xml
