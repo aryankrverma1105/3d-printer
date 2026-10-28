@@ -18,7 +18,7 @@ This guide walks you through linking the **Sologix Energy** "Request a Quote" fo
 2. Copy the entire contents of [`scripts/google-apps-script/Code.gs`](./Code.gs) and paste it into the editor.
 3. At the top of `Code.gs` (around line 17), set your destination email address:
    ```javascript
-   const NOTIFICATION_EMAIL = "your-target-email@yourdomain.com";
+   const NOTIFICATION_EMAIL = "arpit@sologixenergy.in";
    ```
    *(You can enter a single email or multiple comma-separated emails, e.g. `"sales@sologixenergy.in, arpit@..."`)*.
 4. (Optional) Set `SEND_CLIENT_CONFIRMATION = true;` if you also want the customer to receive an automatic acknowledgment email.

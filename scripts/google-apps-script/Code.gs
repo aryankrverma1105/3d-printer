@@ -17,7 +17,7 @@ const SHEET_NAME = "Quote_Submissions";
  * Enter the email address (or multiple comma-separated emails) where quote submissions will be forwarded.
  * Example: "quotes@sologixenergy.in" or "team@sologixenergy.in, founder@sologixenergy.in"
  */
-const NOTIFICATION_EMAIL = "your-email@example.com";
+const NOTIFICATION_EMAIL = "arpit@sologixenergy.in";
 
 /**
  * Optional: Send a confirmation copy email to the client who submitted the quote.
