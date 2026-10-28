@@ -1,31 +1,36 @@
-# Google Sheets & Google Drive Integration Guide
+# Google Sheets, Drive & Email Notification Setup Guide
 
-This guide walks you through linking the **Sologix Energy** "Request a Quote" form to a Google Sheet and Google Drive folder.
-
-> [!WARNING]
-> **Security Notice**: Rotate your Google Apps Script deployment URL if it was ever hardcoded, exposed publicly, or committed to a repository before — treat any previously exposed URL as compromised and generate a fresh deployment version.
-
----
-
-### Step 1: Create a Google Sheet
-1. Open [Google Sheets](https://sheets.new) in your browser.
-2. Name your spreadsheet (e.g. `Sologix Energy - Quote Submissions`).
+This guide walks you through linking the **Sologix Energy** "Request a Quote" form to:
+1. **Google Sheets** (to store all lead data in rows).
+2. **Google Drive** (to save customer CAD / STL file uploads).
+3. **Email Forwarding** (to instantly forward every quote with customer contact info & download links to your designated email account).
 
 ---
 
-### Step 2: Open Google Apps Script
-1. In the top menu of your Google Sheet, click **Extensions** > **Apps Script**.
-2. Erase any default code in `Code.gs`.
-3. Copy the entire contents of [`scripts/google-apps-script/Code.gs`](./Code.gs) and paste it into the script editor.
-4. Press `Ctrl + S` to save.
+### Step 1: Open Google Apps Script
+1. Open your Google Sheet that receives the quote submissions (or create a new one at [sheets.new](https://sheets.new)).
+2. In the top menu, click **Extensions** > **Apps Script**.
 
 ---
 
-### Step 3: Configure Manifest Scopes (`appsscript.json`)
+### Step 2: Paste the Updated `Code.gs` & Configure Your Email
+1. Erase any existing code in `Code.gs`.
+2. Copy the entire contents of [`scripts/google-apps-script/Code.gs`](./Code.gs) and paste it into the editor.
+3. At the top of `Code.gs` (around line 17), set your destination email address:
+   ```javascript
+   const NOTIFICATION_EMAIL = "your-target-email@yourdomain.com";
+   ```
+   *(You can enter a single email or multiple comma-separated emails, e.g. `"sales@sologixenergy.in, arpit@..."`)*.
+4. (Optional) Set `SEND_CLIENT_CONFIRMATION = true;` if you also want the customer to receive an automatic acknowledgment email.
+5. Press `Ctrl + S` to save.
+
+---
+
+### Step 3: Update Manifest Permissions (`appsscript.json`)
 1. Click **Project Settings** (gear icon ⚙️ on the left sidebar).
 2. Check the box: **"Show 'appsscript.json' manifest file in editor"**.
-3. Click the **Editor** (`< >`) icon on the left sidebar and select **`appsscript.json`**.
-4. Paste the contents of [`scripts/google-apps-script/appsscript.json`](./appsscript.json):
+3. Click the **Editor** (`< >`) icon on the left sidebar and click on **`appsscript.json`**.
+4. Replace its content with [`scripts/google-apps-script/appsscript.json`](./appsscript.json):
    ```json
    {
      "timeZone": "Asia/Kolkata",
@@ -38,7 +43,8 @@ This guide walks you through linking the **Sologix Energy** "Request a Quote" fo
      },
      "oauthScopes": [
        "https://www.googleapis.com/auth/spreadsheets",
-       "https://www.googleapis.com/auth/drive"
+       "https://www.googleapis.com/auth/drive",
+       "https://www.googleapis.com/auth/script.send_mail"
      ]
    }
    ```
@@ -47,26 +53,32 @@ This guide walks you through linking the **Sologix Energy** "Request a Quote" fo
 ---
 
 ### Step 4: Authorize Permissions (One-Time)
-1. Select `Code.gs` in the file list.
-2. In the top toolbar dropdown, select **`authorizePermissions`**.
+1. Switch back to `Code.gs` in the file list.
+2. In the top toolbar dropdown (next to *Debug*), select **`authorizePermissions`**.
 3. Click **Run** (▶).
-4. Google will pop up an authorization dialog: click **Review permissions** → select your Google Account → click **Advanced** → click **Go to (unsafe)** → click **Allow**.
+4. Google will show an authorization prompt:
+   - Click **Review permissions**.
+   - Select your Google Workspace account.
+   - Click **Advanced** > **Go to (unsafe)**.
+   - Click **Allow**.
+5. The Execution log at the bottom will display:
+   ```
+   ✅ Spreadsheet accessible
+   ✅ Drive accessible
+   ✅ MailApp accessible! Daily email quota remaining: 1500
+   ```
 
 ---
 
-### Step 5: Deploy as a Web App
-1. At the top right, click **Deploy** > **Manage deployments** (or **New deployment**).
-2. Configure deployment:
+### Step 5: Deploy as a New Web App Version (Crucial!)
+> [!IMPORTANT]
+> Google Apps Script Web Apps **only** run code from the active deployment version. If you edit code without deploying a **New Version**, Google will continue running the old code!
+
+1. At the top right, click **Deploy** > **Manage deployments**.
+2. Click the **Edit (pencil icon ✏️)** next to your active Web App deployment.
+3. Under **Version**, click the dropdown and choose **New version**.
+4. Leave settings as:
    - **Execute as**: `Me`
-   - **Who has access**: `Anyone` *(Crucial: allows website visitors to submit quotes anonymously)*
-   - Set Version to **New version**.
-3. Click **Deploy** and copy the **Web app URL** (`https://script.google.com/macros/s/AKfycbx.../exec`).
-
----
-
-### Step 6: Add URL to your `.env` File
-In your project root, set the variable in `.env`:
-```env
-VITE_GOOGLE_APPS_SCRIPT_URL=https://script.google.com/macros/s/AKfycbxYOUR_DEPLOYMENT_ID/exec
-```
-*(Never commit `.env` to version control; it is ignored via `.gitignore`)*.
+   - **Who has access**: `Anyone`
+5. Click **Deploy**.
+6. If the URL remains the same, your website will immediately start forwarding emails! If a new URL is generated, update `VITE_GOOGLE_APPS_SCRIPT_URL` in your `.env` file and rebuild (`npm run build`).
